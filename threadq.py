@@ -16,6 +16,15 @@ def producer(out_q, lyst, num_of_threads):
         leftSide = [x for x in lyst if x < pivot]
 
         rng =int(len(leftSide)/ int(num_of_threads))
+
+
+        modulo2 = len(leftSide) % rng
+        # nir the king
+        # nir the king 2
+        extra_loop = 0
+        if modulo2 is not 0:
+            extra_loop = 1
+
         modulo = len(leftSide)%num_of_threads
         print(modulo)
         for i in range(int(num_of_threads)):
