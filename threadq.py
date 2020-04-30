@@ -19,6 +19,7 @@ def producer(out_q, lyst, num_of_threads):
 
 
         modulo2 = len(leftSide) % rng
+        # nir the king
         extra_loop = 0
         if modulo2 is not 0:
             extra_loop = 1
