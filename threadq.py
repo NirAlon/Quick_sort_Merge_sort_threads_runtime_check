@@ -11,7 +11,7 @@ def producer(out_q, lyst, num_of_threads):
         p_evt = Event()
         # Produce some data
         pivot = lyst.pop(random.randint(0, len(lyst) - 1))
-        #pivot = 7
+        pivot = 7
         print("pivot: {0}".format(pivot))
         leftSide = [x for x in lyst if x < pivot]
 
