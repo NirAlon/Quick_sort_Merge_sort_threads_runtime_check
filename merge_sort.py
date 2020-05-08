@@ -32,10 +32,17 @@ class Timer(object):
         self._time_per_step[step] += time.time()
 
 
+# result (queue) = results until now from the process pool.
+# array = chunk of size step from main array.
+# every time doing merge to a single chunk
 def merge_sort_multiple(results, array):
     results.append(merge_sort(array))
 
 
+# merge all chunks from result queue
+# starting with the first two
+# after, the result with the third
+# and so on until reaching one large sorted array.
 def merge_multiple(results, array_part_left, array_part_right):
     results.append(merge(array_part_left, array_part_right))
 
@@ -112,7 +119,10 @@ def parallel_merge_sort(array, process_count):
             else:
                 # Get the remaining elements in the list
                 chunk = array[n * step:]
-            pool.apply_async(merge_sort_multiple, (results, chunk))
+            pool.apply_async(merge_sort_multiple, (results, chunk))  # result = queue of sorted chunks.
+                                                                     # chunk = array of size step.
+                                                                     # sends to function in order to append the merge
+                                                                     # chunk to result
 
     timer.stop_for('sort')
 
