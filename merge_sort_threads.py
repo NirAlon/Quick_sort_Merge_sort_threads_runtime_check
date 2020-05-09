@@ -7,7 +7,6 @@ from threading import Thread, Event, Lock
 kill_thread = False
 final_results = []
 lock = Lock()
-left = []
 
 
 def chunks(lst, n):
@@ -16,7 +15,7 @@ def chunks(lst, n):
         yield lst[i:i + n]
 
 
-def isSorted(lyst):
+def is_sorted(lyst):
     """
     Return whether the argument lyst is in non-decreasing order.
     """
@@ -24,76 +23,6 @@ def isSorted(lyst):
         if lyst[i] < lyst[i - 1]:
             return False
     return True
-
-
-# The Producer thread is responsible for putting items into the queue if it is not full
-def producer(out_q, array, num_of_threads, lock):
-
-    # array of events?
-    p_evt = []
-
-    # divide the array into chunks of size step.
-    step = int(len(array) / num_of_threads)
-    index_wait = 0
-    for n in range(num_of_threads):
-        if n < num_of_threads - 1:
-            chunk = array[n * step:(n + 1) * step]
-        else:
-            # Get the remaining elements in the list
-            chunk = array[n * step:]
-        p_evt.append(Event())
-        out_q.put(chunk, p_evt[index_wait])
-        index_wait += 1
-
-    print("producer start waiting")
-    for i in range(index_wait):
-        p_evt[i].wait()
-    print("producer Stop waiting")
-
-    p_evt.clear()
-
-    print("Left side after sort"+final_results.__str__())
-
-    print("producer start waiting")
-    p_evt[0].wait()
-    print("producer Stop waiting")
-    print("Pivot after sort" + final_results.__str__())
-
-    for t in range(len(thread_list)):
-        if thread_list[t].isAlive():
-            print(thread_list[t].getName())
-            kill_thread = True
-            time.sleep(0.5)
-        else:
-            thread_list[t].join()
-    return
-
-
-# the Consumer thread consumes items if there are any.
-def consumer(in_q, lock):
-    while True:
-
-        if kill_thread:
-            break
-        while q.empty():
-            time.sleep(0.01)
-        # Get some data
-        data, p_evt = in_q.get()
-        time.sleep(1)
-        if len(data) == 0:
-            p_evt.set()
-            #return
-
-        # Process the data
-        print("consumer {0} got list: {1}".format(threading.get_ident().__str__(), data))
-        lock.acquire()
-        final_results.extend(quicksort(data))
-        lock.release()
-        p_evt.set()
-
-        #if(q.empty()):
-            #print("consumer {0} BREAKING".format(threading.get_ident().__str__()))
-            #return
 
 
 # result (queue) = results until now from the process pool.
@@ -150,22 +79,97 @@ def merge(left, right):
     return sorted_list
 
 
+# The Producer thread is responsible for putting items into the queue if it is not full
+def producer(out_q, array, num_of_threads):
+
+    # array of events
+    p_evt = []
+
+    # divide the array into chunks of size step.
+    step = int(len(array) / num_of_threads)
+    index_wait = 0
+    for n in range(num_of_threads):
+        if n < num_of_threads - 1:
+            chunk = array[n * step:(n + 1) * step]
+        else:
+            # Get the remaining elements in the list
+            chunk = array[n * step:]
+        p_evt.append(Event())
+        out_q.put((chunk, p_evt[index_wait]))  # tuple of data and event
+        index_wait += 1
+
+    print("producer start waiting")
+    for i in range(index_wait):
+        # blocks until the flag is true
+        p_evt[i].wait()
+    print("producer Stop waiting")
+
+    # clear event list
+    p_evt.clear()
+
+    for i in range(num_of_threads):
+        print("sorted chunk {0}".format(i))
+        print(out_q[i])
+
+    global q_run
+    print("Stop all threads", q_run.get())
+    for t in thread_list:
+        if t.isAlive():
+            print(t.getName())
+            # time.sleep(0.5)
+        else:
+            t.join()
+
+    # now all chunks is sorted
+    # need to sort the big queue
+    # not sure if here or after the threads are finished
+    while len(out_q) > 1:
+        merge_multiple(final_results, out_q.get()[0], out_q.get()[0])
+
+
+# the Consumer thread consumes items if there are any.
+def consumer(in_q, lock):
+    global q_run
+    while True:
+        while not q_run.empty():
+            # Get some data
+            if not in_q.empty():
+                data, p_evt = in_q.get()  # tuple of data and event
+                if len(data) == 0:
+                    p_evt.set()
+                # Process the data
+                # print("consumer {0} got list: {1}".format(threading.get_ident().__str__(),data))
+                lock.acquire()
+                final_results.extend(merge_sort(data))
+                lock.release()
+                p_evt.set()
+
+        if q_run.empty():
+            print("consumer {0} BREAKING".format(threading.get_ident().__str__()))
+            break
+
+
 if __name__ == '__main__':
 
     array = []
-
+    num_of_threads = 4
     array = random.sample(range(100), 100)
     q = Queue()
+    q_run = Queue()
+    q_run.put(1)
     thread_list = []
 
-    for t in range(4):
+    for t in range(num_of_threads):
         thread = Thread(target=consumer, args=(q, lock))
         thread_list.append(thread)
         thread.start()
 
-    producer(q, array, len(thread_list), lock)
+    start = time.time()  # start time
+    producer(q, array, len(thread_list))
+    elapsed = time.time() - start  # stop time
+    print('num_of_threads: {0} Sequential quicksort: {1} sec'.format(num_of_threads, elapsed))
 
-    print(final_results.__str__())
-    kill_thread = True
+    if is_sorted(final_results):
+        print("The final array result is sorted!!!")
     for t in range(len(thread_list)):
         thread_list[t].join()
