@@ -5,14 +5,8 @@ import time
 from threading import Thread, Event, Lock
 
 kill_thread = False
-final_results = []
 lock = Lock()
-
-
-def chunks(lst, n):
-    """Yield successive n-sized chunks from lst."""
-    for i in range(0, len(lst), n):
-        yield lst[i:i + n]
+final_q = Queue()
 
 
 def is_sorted(lyst):
@@ -29,7 +23,7 @@ def is_sorted(lyst):
 # array = chunk of size step from main array.
 # every time doing merge to a single chunk
 def merge_sort_multiple(results, array):
-    results.append(merge_sort(array))
+    results.put(merge_sort(array))
 
 
 # merge all chunks from result queue
@@ -37,7 +31,7 @@ def merge_sort_multiple(results, array):
 # after, the result with the third
 # and so on until reaching one large sorted array.
 def merge_multiple(results, array_part_left, array_part_right):
-    results.append(merge(array_part_left, array_part_right))
+    results.put(merge(array_part_left, array_part_right))
 
 
 # split the list into half (mid index) until getting to size one.
@@ -107,10 +101,6 @@ def producer(out_q, array, num_of_threads):
     # clear event list
     p_evt.clear()
 
-    for i in range(num_of_threads):
-        print("sorted chunk {0}".format(i))
-        print(out_q[i])
-
     global q_run
     print("Stop all threads", q_run.get())
     for t in thread_list:
@@ -119,12 +109,6 @@ def producer(out_q, array, num_of_threads):
             # time.sleep(0.5)
         else:
             t.join()
-
-    # now all chunks is sorted
-    # need to sort the big queue
-    # not sure if here or after the threads are finished
-    while len(out_q) > 1:
-        merge_multiple(final_results, out_q.get()[0], out_q.get()[0])
 
 
 # the Consumer thread consumes items if there are any.
@@ -138,38 +122,54 @@ def consumer(in_q, lock):
                 if len(data) == 0:
                     p_evt.set()
                 # Process the data
-                # print("consumer {0} got list: {1}".format(threading.get_ident().__str__(),data))
                 lock.acquire()
-                final_results.extend(merge_sort(data))
+                merge_sort_multiple(final_q, data)  # merge sort the data
                 lock.release()
                 p_evt.set()
 
         if q_run.empty():
-            print("consumer {0} BREAKING".format(threading.get_ident().__str__()))
+            print("consumer {0} BREAKING ".format(threading.get_ident().__str__()))
             break
 
 
 if __name__ == '__main__':
 
-    array = []
+    length = random.randint(3 * 10 ** 4, 3 * 10 ** 5)  # Randomize the length of our list
+    # unsorted_array = []
+    final_result = []
     num_of_threads = 4
-    array = random.sample(range(100), 100)
-    q = Queue()
+    unsorted_array = [random.randint(0, n * 100) for n in range(length)]  # Create an unsorted list with random numbers
+    main_q = Queue()
     q_run = Queue()
     q_run.put(1)
     thread_list = []
 
     for t in range(num_of_threads):
-        thread = Thread(target=consumer, args=(q, lock))
+        thread = Thread(target=consumer, args=(main_q, lock))
         thread_list.append(thread)
         thread.start()
 
-    start = time.time()  # start time
-    producer(q, array, len(thread_list))
-    elapsed = time.time() - start  # stop time
-    print('num_of_threads: {0} Sequential quicksort: {1} sec'.format(num_of_threads, elapsed))
+    print('start Sequential:')
+    start_sequential = time.time()
+    merge_sort(unsorted_array)
+    elapsed_sequential = time.time() - start_sequential
+    print('sequential merge: {}'.format(elapsed_sequential))
 
-    if is_sorted(final_results):
-        print("The final array result is sorted!!!")
+    print('start parallel:')
+    start_parallel = time.time()
+    producer(main_q, unsorted_array, len(thread_list))
+    elapsed_parallel = time.time() - start_parallel  # stop time
+    print('num_of_threads: {0} parallel merge: {1} sec'.format(num_of_threads, elapsed_parallel))
+
+    while final_q.qsize() > 1:
+        merge_multiple(final_q, final_q.get(), final_q.get())
+    final_result = final_q.get()
+
+    if is_sorted(final_result):
+        print("this is the sorted array!:")
+        print((final_result.__str__()))
+    else:
+        print("array not sorted :(")
+
     for t in range(len(thread_list)):
         thread_list[t].join()
