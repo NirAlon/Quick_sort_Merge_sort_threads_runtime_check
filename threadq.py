@@ -2,6 +2,7 @@ from queue import Queue
 import random, time
 from threading import Thread, Event, Lock
 import multiprocessing
+from animal import Animal
 
 
 final_results = []
@@ -21,6 +22,21 @@ def isSorted(lyst):
             return False
     return True
 
+def create_animal_array():
+    animals = []
+    length = random.randint(3 * 10 ** 4, 3 * 10 ** 5)  # Randomize the length of our list
+    for _ in range(300000):
+        height = random.randint(10, 4000)
+        weight = random.randint(2, 600)
+        age = random.randint(1, 200)
+        num_of_legs = random.randint(0, 10)
+        if random.randint(0, 1) is 0:
+            tail = False
+        else:
+            tail = True
+        animals.append(Animal(height, weight, age, num_of_legs, tail))
+    return animals
+
 def producer(out_q, lyst, num_of_threads,lock):
 
     p_evt = []
@@ -34,6 +50,8 @@ def producer(out_q, lyst, num_of_threads,lock):
     pivot = lyst.pop(random.randint(0, len(lyst) - 1))
     leftSide = [x for x in lyst if x < pivot]
     pack = int(len(leftSide)/num_of_threads)
+
+
 
     index_wait = 0
     if pack == 0:
@@ -93,11 +111,11 @@ def consumer(in_q,lock):
                 break
             if len(data) == 0: #in case that the list is empty
                 p_evt.set() # Thread signaling to the producer that is done and waiting for another chunk
-
             # Process the data
             #print("consumer {0} got list: {1}".format(threading.get_ident().__str__(),data))
             lock.acquire() # Thread acquire to edit the list, if it's already acquired the current thread will wait.
             final_results.extend(quicksort(data)) # Adding the sort chunk to the list
+
             lock.release() # Thead realease the lock
             p_evt.set() # Thread signaling to the producer that is done and waiting for another chunk
 
@@ -117,15 +135,15 @@ def quicksort(lyst):
 print("process num:",multiprocessing.cpu_count())
 
 for num_of_threads in range(1,(multiprocessing.cpu_count()*2)): # Program is running between 1 to num of processors * 2
-    array = [] # random array list
+    array = create_animal_array() # random array list
     final_results=[] #final sorted list
-    array = random.sample(range(5000), 5000) # random numbers
+    #array = random.sample(range(5000), 5000) # random numbers
     #print("array", array)
     q = Queue() # communicate between producer and consumer
     q_run = Queue() # Flag for the while consumer is running.
     q_run.put(1) # while this queue is not empty the consumer will still running
     thread_list=[] # list of threads.
-
+    
     for t in range(num_of_threads): # Loop of
         thread = Thread(target=consumer, args=(q,lock)) # Every thread is running on the consumer program
         thread_list.append(thread)
@@ -138,7 +156,7 @@ for num_of_threads in range(1,(multiprocessing.cpu_count()*2)): # Program is run
 
     if isSorted(final_results): #Cheacking that the final list sorted
         print("Done! len:{}".format(len(final_results)))
-
+        #print(final_results)
 
     for t in range(len(thread_list)): #Running on the thread list and cheacking who is still alive
         while thread_list[t].isAlive(): # if the current thread is alive, probbebly it's cuz is still waiting on queue
@@ -153,6 +171,16 @@ for num_of_threads in range(1,(multiprocessing.cpu_count()*2)): # Program is run
 start = time.time()             #start time
 lyst = quicksort(array)          #quicksort the list
 elapsed = time.time() - start   #stop time
+if not isSorted(lyst):
+    print('quicksort did not sort the lyst. oops.')
+
+
+
+print('Sequential quicksort: %f sec' % (elapsed))
+
+start = time.time()  # start time
+array.sort()  # quicksort the list
+elapsed = time.time() - start  # stop time
 if not isSorted(lyst):
     print('quicksort did not sort the lyst. oops.')
 
