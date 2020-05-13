@@ -1,10 +1,11 @@
-import threading
 from queue import Queue
 import random
 import time
 from threading import Thread, Event, Lock
+import multiprocessing
+from animal import Animal
 
-kill_thread = False
+
 lock = Lock()
 final_q = Queue()
 
@@ -17,6 +18,22 @@ def is_sorted(lyst):
         if lyst[i] < lyst[i - 1]:
             return False
     return True
+
+
+def create_animal_array():
+    animals = []
+    length = random.randint(3 * 10 ** 4, 3 * 10 ** 5)  # Randomize the length of our list
+    for _ in range(length):
+        height = random.randint(10, 4000)
+        weight = random.randint(2, 600)
+        age = random.randint(1, 200)
+        num_of_legs = random.randint(0, 10)
+        if random.randint(0, 1) is 0:
+            tail = False
+        else:
+            tail = True
+        animals.append(Animal(height, weight, age, num_of_legs, tail))
+    return animals
 
 
 # result (queue) = results until now from the process pool.
@@ -102,17 +119,17 @@ def producer(out_q, array, num_of_threads):
     p_evt.clear()
 
     global q_run
-    print("Stop all threads", q_run.get())
+    print("Stop all threads ", q_run.get())
     for t in thread_list:
         if t.isAlive():
-            print(t.getName())
+            print(t.getName(), ' is alive!')
             # time.sleep(0.5)
         else:
             t.join()
 
 
 # the Consumer thread consumes items if there are any.
-def consumer(in_q, lock):
+def consumer(in_q):  # removed lock parameter, using lock from above
     global q_run
     while True:
         while not q_run.empty():
@@ -123,53 +140,77 @@ def consumer(in_q, lock):
                     p_evt.set()
                 # Process the data
                 lock.acquire()
-                merge_sort_multiple(final_q, data)  # merge sort the data
+                merge_sort_multiple(final_q, data)  # merge sort the data into final queue
                 lock.release()
                 p_evt.set()
 
         if q_run.empty():
-            print("consumer {0} BREAKING ".format(threading.get_ident().__str__()))
+            # print("consumer {0} BREAKING ".format(threading.get_ident().__str__()))
             break
 
 
 if __name__ == '__main__':
 
-    length = random.randint(3 * 10 ** 4, 3 * 10 ** 5)  # Randomize the length of our list
-    # unsorted_array = []
-    final_result = []
-    num_of_threads = 4
-    unsorted_array = [random.randint(0, n * 100) for n in range(length)]  # Create an unsorted list with random numbers
-    main_q = Queue()
-    q_run = Queue()
-    q_run.put(1)
-    thread_list = []
-
-    for t in range(num_of_threads):
-        thread = Thread(target=consumer, args=(main_q, lock))
-        thread_list.append(thread)
-        thread.start()
+    # length = random.randint(3 * 10 ** 4, 3 * 10 ** 5)  # Randomize the length of our list
+    # unsorted_array = [random.randint(0, n * 100) for n in range(length)]  # Create an unsorted list with random numbers
+    all_animals = create_animal_array()
+    sorted_animals = merge_sort(all_animals)
+    '''
+    # print(sorted_animals)
+    for animal in sorted_animals:
+        print(animal)
+    '''
 
     print('start Sequential:')
     start_sequential = time.time()
-    merge_sort(unsorted_array)
-    elapsed_sequential = time.time() - start_sequential
-    print('sequential merge: {}'.format(elapsed_sequential))
-
-    print('start parallel:')
-    start_parallel = time.time()
-    producer(main_q, unsorted_array, len(thread_list))
-    elapsed_parallel = time.time() - start_parallel  # stop time
-    print('num_of_threads: {0} parallel merge: {1} sec'.format(num_of_threads, elapsed_parallel))
-
-    while final_q.qsize() > 1:
-        merge_multiple(final_q, final_q.get(), final_q.get())
-    final_result = final_q.get()
-
-    if is_sorted(final_result):
+    sequential_array = merge_sort(all_animals)
+    if is_sorted(sequential_array):
+        time.sleep(2)
         print("this is the sorted array!:")
-        print((final_result.__str__()))
+        print((all_animals.__str__()))
     else:
         print("array not sorted :(")
 
-    for t in range(len(thread_list)):
-        thread_list[t].join()
+    elapsed_sequential = time.time() - start_sequential
+    print('sequential merge: {}'.format(elapsed_sequential))
+
+    print("@@@ Computer Process num: {} @@@".format(multiprocessing.cpu_count()))
+    for num_of_threads in range(2, (multiprocessing.cpu_count() * 2)):
+        print('\n$$$$$$$$$$$$$$$$$$$$ Num of threads {} $$$$$$$$$$$$$$$$$$$$'.format(num_of_threads))
+        final_sorted_result = []
+        main_q = Queue()  # queue with data and events for producer and consumer
+        q_run = Queue()
+        q_run.put(1)
+        thread_list = []
+
+        for t in range(num_of_threads):
+            thread = Thread(target=consumer, args=(main_q,))  # removed lock parameter, using lock from above
+            thread_list.append(thread)
+            thread.start()
+
+        print('start parallel:')
+        start_parallel = time.time()
+        producer(main_q, all_animals, len(thread_list))
+        elapsed_parallel = time.time() - start_parallel
+        print('parallel merge: {} sec'.format(elapsed_parallel))
+        if elapsed_sequential > elapsed_parallel:
+            print('Parallel won!!! :)')
+        else:
+            print('Sequential won :(')
+
+        # merge sub-lists
+        while final_q.qsize() > 1:
+            merge_multiple(final_q, final_q.get(), final_q.get())
+        final_sorted_result = final_q.get()
+
+        if is_sorted(final_sorted_result):
+            time.sleep(2)
+            print("this is the sorted array!:")
+            print(final_sorted_result)
+        else:
+            print("array not sorted :(")
+
+        for t in range(len(thread_list)):
+            print('Start join all threads!!!: ', thread_list)
+            thread_list[t].join()
+
