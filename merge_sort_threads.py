@@ -23,7 +23,7 @@ def is_sorted(lyst):
 def create_animal_array():
     animals = []
     length = random.randint(3 * 10 ** 4, 3 * 10 ** 5)  # Randomize the length of our list
-    for _ in range(length):
+    for _ in range(8000):
         height = random.randint(10, 4000)
         weight = random.randint(2, 600)
         age = random.randint(1, 200)
@@ -109,65 +109,50 @@ def producer(out_q, array, num_of_threads):
         out_q.put((chunk, p_evt[index_wait]))  # tuple of data and event
         index_wait += 1
 
-    print("producer start waiting")
+    # waiting for thread to finish the job
     for i in range(index_wait):
-        # blocks until the flag is true
         p_evt[i].wait()
-    print("producer Stop waiting")
-
-    # clear event list
-    p_evt.clear()
 
     global q_run
-    print("Stop all threads ", q_run.get())
-    for t in thread_list:
-        if t.isAlive():
-            print(t.getName(), ' is alive!')
-            # time.sleep(0.5)
-        else:
-            t.join()
+    print("Stop all threads", q_run.get())  # Raising flag to consumer to break the while loop
+    return
 
 
 # the Consumer thread consumes items if there are any.
 def consumer(in_q):  # removed lock parameter, using lock from above
     global q_run
-    while True:
-        while not q_run.empty():
-            # Get some data
-            if not in_q.empty():
-                data, p_evt = in_q.get()  # tuple of data and event
-                if len(data) == 0:
-                    p_evt.set()
-                # Process the data
-                lock.acquire()
-                merge_sort_multiple(final_q, data)  # merge sort the data into final queue
-                lock.release()
-                p_evt.set()
+
+    while not q_run.empty():  # Thread is running until the queue is empty
+
+        if not in_q.empty():
+            data, p_evt = in_q.get()
+            if data == -1:  # In case the job is done but this thread is still waiting for data on queue
+                print("-1 Break")
+                break
+            if len(data) == 0:  # in case that the list is empty
+                p_evt.set()  # Thread signaling to the producer that is done and waiting for another chunk
+            # Process the data
+            lock.acquire()  # Thread acquire to edit the list, if it's already acquired the current thread will wait.
+            merge_sort_multiple(final_q, data)  # merge sort the data into final queue
+            lock.release()  # Thread release the lock
+            p_evt.set()  # Thread signaling to the producer that is done and waiting for another chunk
 
         if q_run.empty():
-            # print("consumer {0} BREAKING ".format(threading.get_ident().__str__()))
+            # if the flag is raised and the queue is empty the threads is break out
             break
 
 
 if __name__ == '__main__':
 
-    # length = random.randint(3 * 10 ** 4, 3 * 10 ** 5)  # Randomize the length of our list
-    # unsorted_array = [random.randint(0, n * 100) for n in range(length)]  # Create an unsorted list with random numbers
     all_animals = create_animal_array()
-    sorted_animals = merge_sort(all_animals)
-    '''
-    # print(sorted_animals)
-    for animal in sorted_animals:
-        print(animal)
-    '''
 
-    print('start Sequential:')
+    # check Sequential time of sort
+    print('Start sequential:')
     start_sequential = time.time()
     sequential_array = merge_sort(all_animals)
     if is_sorted(sequential_array):
-        time.sleep(2)
         print("this is the sorted array!:")
-        print((all_animals.__str__()))
+        print(all_animals)
     else:
         print("array not sorted :(")
 
@@ -178,19 +163,19 @@ if __name__ == '__main__':
     for num_of_threads in range(2, (multiprocessing.cpu_count() * 2)):
         print('\n$$$$$$$$$$$$$$$$$$$$ Num of threads {} $$$$$$$$$$$$$$$$$$$$'.format(num_of_threads))
         final_sorted_result = []
-        main_q = Queue()  # queue with data and events for producer and consumer
-        q_run = Queue()
-        q_run.put(1)
+        main_q = Queue()  # communicate between producer and consumer
+        q_run = Queue()  # Flag for the while consumer is running.
+        q_run.put(1)  # while this queue is not empty the consumer will still running
         thread_list = []
 
         for t in range(num_of_threads):
-            thread = Thread(target=consumer, args=(main_q,))  # removed lock parameter, using lock from above
+            thread = Thread(target=consumer, args=(main_q,))  # Every thread is running on the consumer program
             thread_list.append(thread)
             thread.start()
 
         print('start parallel:')
         start_parallel = time.time()
-        producer(main_q, all_animals, len(thread_list))
+        producer(main_q, all_animals, len(thread_list))  # supervise the jobs
         elapsed_parallel = time.time() - start_parallel
         print('parallel merge: {} sec'.format(elapsed_parallel))
         if elapsed_sequential > elapsed_parallel:
@@ -210,7 +195,12 @@ if __name__ == '__main__':
         else:
             print("array not sorted :(")
 
-        for t in range(len(thread_list)):
-            print('Start join all threads!!!: ', thread_list)
-            thread_list[t].join()
+        for t in range(len(thread_list)):  # Running on the thread list and checking who is still alive
+            while thread_list[t].isAlive():  # if the current thread is alive, probably it's cuz is still waiting on queue
+                main_q.put((-1, None))  # Sending -1 to the thread queue to release the thread
 
+        joined = 0
+        for t in range(len(thread_list)):
+            thread_list[t].join()  # closing the threads
+            joined += 1
+        print("Num of joined", joined)  # Making sure that all the active threads are joined.
