@@ -28,7 +28,7 @@ def is_sorted(lyst):
 def create_animal_array():
     animals = []
     length = random.randint(3 * 10 ** 4, 3 * 10 ** 5)  # Randomize the length of our list
-    for _ in range(3000):
+    for _ in range(100000):
         height = random.randint(10, 4000)
         weight = random.randint(2, 600)
         age = random.randint(1, 200)
@@ -137,6 +137,10 @@ if __name__ == '__main__':
 
     all_animals = create_animal_array()  # random array list of object animal
 
+    file = open('quicksort', 'w')
+
+
+
     # check Sequential time of sort
     print('Start sequential:')
     start_sequential = time.time()
@@ -149,10 +153,11 @@ if __name__ == '__main__':
 
     elapsed_sequential = time.time() - start_sequential
     print('sequential merge: {}'.format(elapsed_sequential))
+    file.write("0 {0}\n".format(elapsed_sequential))
 
     print("@@@ Computer Process num: {} @@@".format(multiprocessing.cpu_count()))
 
-    for num_of_threads in range(2, (multiprocessing.cpu_count()*2) + 1):  #  Program is running between 1 to num of processors * 2
+    for num_of_threads in range(1, (multiprocessing.cpu_count()*2) + 1):  #  Program is running between 1 to num of processors * 2
         print('\n$$$$$$$$$$$$$$$$$$$$ Num of threads {} $$$$$$$$$$$$$$$$$$$$'.format(num_of_threads))
         final_results = []  # final sorted list
         main_q = Queue()  # communicate between producer and consumer
@@ -170,6 +175,9 @@ if __name__ == '__main__':
         producer(main_q, all_animals, len(thread_list))  # supervise the jobs
         elapsed_parallel = time.time() - start_parallel
         print('parallel merge: {} sec'.format(elapsed_parallel))
+
+        file.write("{0} {1} \n".format(num_of_threads,elapsed_parallel))
+
         if elapsed_sequential > elapsed_parallel:
             print('Parallel won!!! :)')
         else:
@@ -189,4 +197,4 @@ if __name__ == '__main__':
             joined += 1
         print("Num of joined", joined)  # Making sure that all the active threads are joined.
 
-
+    file.close()
