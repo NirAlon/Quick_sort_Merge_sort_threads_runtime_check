@@ -22,7 +22,7 @@ def is_sorted(lyst):
 
 def create_animal_array():
     animals = []
-    length = random.randint(3 * 10 ** 4, 3 * 10 ** 5)  # Randomize the length of our list
+    length = random.randint(3 * 10 ** 4, 3 * 10 ** 5)  # Randomize the length of our list between 3000 to 30000
     for _ in range(100000):
         height = random.randint(10, 4000)
         weight = random.randint(2, 600)
@@ -153,7 +153,7 @@ if __name__ == '__main__':
     sequential_array = merge_sort(all_animals)
     if is_sorted(sequential_array):
         print("this is the sorted array!:")
-        print(all_animals)
+        # print(all_animals)
     else:
         print("array not sorted :(")
 
@@ -196,12 +196,12 @@ if __name__ == '__main__':
         if is_sorted(final_sorted_result):
             time.sleep(2)
             print("this is the sorted array!:")
-            print(final_sorted_result)
+            # print(final_sorted_result)
         else:
             print("array not sorted :(")
 
         for t in range(len(thread_list)):  # Running on the thread list and checking who is still alive
-            while thread_list[t].isAlive():  # if the current thread is alive, probably it's cuz is still waiting on queue
+            while thread_list[t].isAlive():  # if the current thread is alive, probably it's because he's still waiting on queue
                 main_q.put((-1, None))  # Sending -1 to the thread queue to release the thread
 
         joined = 0
