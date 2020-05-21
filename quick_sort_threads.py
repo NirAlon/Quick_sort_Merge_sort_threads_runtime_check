@@ -3,7 +3,7 @@ import random, time
 from threading import Thread, Event, Lock
 import multiprocessing
 from animal import Animal  # error for no reason. import working.
-
+import config
 
 final_results = []
 lock = Lock()
@@ -19,10 +19,20 @@ def is_sorted(lyst):
     """
     Return whether the argument lyst is in non-decreasing order.
     """
-    for i in range(1, len(lyst)):
-        if lyst[i] < lyst[i - 1]:
-            return False
-    return True
+
+    # d for descending  יורד
+    if config.SORT_ORDER is 'd':
+        for i in range(1, len(lyst)):
+            if lyst[i] > lyst[i - 1]:
+                return False
+        return True
+
+    # a for ascending  עולה
+    if config.SORT_ORDER is 'a':
+        for i in range(1, len(lyst)):
+            if lyst[i] < lyst[i - 1]:
+                return False
+        return True
 
 
 def create_animal_array():
