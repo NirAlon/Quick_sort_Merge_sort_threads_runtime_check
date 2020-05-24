@@ -8,12 +8,7 @@ import config
 
 class QuickSortThreads:
 
-    final_results = []  # final sorted list
     lock = Lock()
-    main_q = Queue()  # communicate between producer and consumer
-    q_run = Queue()  # Flag for the while consumer is running.
-    # q_run.put(1)  # while this queue is not empty the consumer will still running
-    thread_list = []
 
     def chunks(self, lst, n):
         """Yield successive n-sized chunks from lst."""
@@ -41,8 +36,7 @@ class QuickSortThreads:
 
     def create_animal_array(self):
         animals = []
-        length = random.randint(3 * 10 ** 4, 3 * 10 ** 5)  # Randomize the length of our list
-        for _ in range(100000):
+        for _ in range(config.ARRAY_LENGTH):
             height = random.randint(10, 4000)
             weight = random.randint(2, 600)
             age = random.randint(1, 200)
@@ -64,8 +58,11 @@ class QuickSortThreads:
         # dividing the list to chunks by pack
         # every thread gets list(chunk) and event
 
-        pivot = lyst.pop(random.randint(0, len(lyst) - 1))
-        left_side = [x for x in lyst if x < pivot]
+        pivot=lyst[random.randint(0, len(lyst) - 1)]
+        if config.SORT_ORDER is 'a':
+            left_side = [x for x in lyst if x < pivot]
+        elif config.SORT_ORDER is 'd':
+            left_side = [x for x in lyst if x > pivot]
         pack = int(len(left_side)/num_of_threads)
 
         index_wait = 0
@@ -91,8 +88,10 @@ class QuickSortThreads:
         # Dividing the list in num of threads (pack)
         # dividing the list to chunks by pack
         # every thread gets list(chunk) and event
-
-        right_side = [x for x in lyst if x > pivot]
+        if config.SORT_ORDER is 'a':
+            right_side = [x for x in lyst if x >= pivot]
+        elif config.SORT_ORDER is 'd':
+            right_side = [x for x in lyst if x <= pivot]
         pack = int(len(right_side)/num_of_threads)
         index_wait = 0
         p_evt.clear()
@@ -109,8 +108,11 @@ class QuickSortThreads:
             p_evt[i].wait()
 
         # global q_run
-        print("Stop all threads", self.q_run.get())  # Raising flag to consumer to break the while loop
-        self.final_results.sort()  # Sort final result after all the chunks are sorted in the list
+        #print("Stop all threads", self.q_run.get())  # Raising flag to consumer to break the while loop
+        if config.SORT_ORDER is 'a':
+            self.final_results.sort()  # Sort final result after all the chunks are sorted in the list
+        elif config.SORT_ORDER is 'd':
+            self.final_results.sort(reverse=True)  # Sort final result after all the chunks are sorted in the list
         return
 
     def consumer(self, in_q, lock):
@@ -121,7 +123,6 @@ class QuickSortThreads:
             if not in_q.empty():
                 data, p_evt = in_q.get()
                 if data == -1:  # In case the job is done but this thread is still waiting for data on queue
-                    print("-1 Break")
                     break
                 if len(data) == 0:  # in case that the list is empty
                     p_evt.set()  # Thread signaling to the producer that is done and waiting for another chunk
@@ -136,12 +137,16 @@ class QuickSortThreads:
                 # if the flag is raised and the queue is empty the threads is break out
                 break
 
+
     def quicksort(self, lyst):
 
         if len(lyst) <= 1:
             return lyst
-        pivot = lyst.pop(random.randint(0, len(lyst) - 1))
-        return self.quicksort([x for x in lyst if x < pivot]) + [pivot] + self.quicksort([x for x in lyst if x >= pivot])
+        pivot=lyst[random.randint(0, len(lyst) - 1)]
+        if config.SORT_ORDER is 'a':
+            return self.quicksort([x for x in lyst if x < pivot]) + [pivot] + self.quicksort([x for x in lyst if x >= pivot])
+        elif config.SORT_ORDER is 'd':
+            return self.quicksort([x for x in lyst if x > pivot]) + [pivot] + self.quicksort([x for x in lyst if x <= pivot])
 
     def run(self):
 
@@ -150,23 +155,23 @@ class QuickSortThreads:
         file = open('quicksort', 'w')
 
         # check Sequential time of sort
-        print('Start sequential:')
+        #print('Start sequential:')
         start_sequential = time.time()
         sequential_animal_array = self.quicksort(all_animals)
         if self.is_sorted(sequential_animal_array):
             print("this is the sorted array!:")
-            print(sequential_animal_array)
+            #print(sequential_animal_array)
         else:
             print("array not sorted :(")
 
         elapsed_sequential = time.time() - start_sequential
-        print('sequential merge: {}'.format(elapsed_sequential))
+        print('sequential quicksort: {}'.format(elapsed_sequential))
         file.write("0 {0}\n".format(elapsed_sequential))
 
-        print("@@@ Computer Process num: {} @@@".format(multiprocessing.cpu_count()))
+        #print("@@@ Computer Process num: {} @@@".format(multiprocessing.cpu_count()))
 
         for num_of_threads in range(1, (multiprocessing.cpu_count()*2) + 1):  #  Program is running between 1 to num of processors * 2
-            print('\n$$$$$$$$$$$$$$$$$$$$ Num of threads {} $$$$$$$$$$$$$$$$$$$$'.format(num_of_threads))
+            #print('\n$$$$$$$$$$$$$$$$$$$$ Num of threads {} $$$$$$$$$$$$$$$$$$$$'.format(num_of_threads))
             self.final_results = []  # final sorted list
             self.main_q = Queue()  # communicate between producer and consumer
             self.q_run = Queue()  # Flag for the while consumer is running.
@@ -178,21 +183,17 @@ class QuickSortThreads:
                 self.thread_list.append(thread)
                 thread.start()
 
-            print('start parallel:')
+            #print('start parallel:')
             start_parallel = time.time()
             self.producer(self.main_q, all_animals, len(self.thread_list))  # supervise the jobs
             elapsed_parallel = time.time() - start_parallel
-            print('parallel merge: {} sec'.format(elapsed_parallel))
+            #print('parallel merge: {} sec'.format(elapsed_parallel))
 
             file.write("{0} {1} \n".format(num_of_threads,elapsed_parallel))
 
-            if elapsed_sequential > elapsed_parallel:
-                print('Parallel won!!! :)')
-            else:
-                print('Sequential won :(')
 
-            if self.is_sorted(self.final_results):  # checking that the final list sorted
-                print("Done! len:{}".format(len(self.final_results)))
+            #if self.is_sorted(self.final_results):  # checking that the final list sorted
+                #print("Done! len:{}".format(len(self.final_results)))
                 # print(final_results)
 
             for t in self.thread_list:  # Running on the thread list and checking who is still alive
@@ -203,6 +204,7 @@ class QuickSortThreads:
             for t in self.thread_list:
                 t.join()  # closing the threads
                 joined += 1
-            print("Num of joined", joined)  # Making sure that all the active threads are joined.
-
+            #print("Num of joined", joined)  # Making sure that all the active threads are joined.
         file.close()
+        print(len(self.final_results))
+        print(self.final_results.__str__())

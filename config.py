@@ -1,8 +1,8 @@
 
-ARRAY_LENGTH = 100000
+ARRAY_LENGTH = 10000
 
 # a for ascending  עולה
 # d for descending  יורד
 SORT_ORDER = 'd'
 
-PRIORITY_FIELDS = ''  # WHAT TO DO HERE?
+list=['num_of_legs','weight','height','age'] #Order the list by priority, The first element is the first priority

@@ -8,7 +8,7 @@ import config
 
 
 class MergeSortThreads:
-
+    print("MergeSortThreads...")
     lock = Lock()
     final_q = Queue()
     final_sorted_result = []
@@ -133,7 +133,7 @@ class MergeSortThreads:
             p_evt[i].wait()
 
         # global q_run
-        print("Stop all threads", self.q_run.get())  # Raising flag to consumer to break the while loop
+        #print("Stop all threads", self.q_run.get())  # Raising flag to consumer to break the while loop
         return
 
     # the Consumer thread consumes items if there are any.
@@ -145,7 +145,7 @@ class MergeSortThreads:
             if not in_q.empty():
                 data, p_evt = in_q.get()
                 if data == -1:  # In case the job is done but this thread is still waiting for data on queue
-                    print("-1 Break")
+                    #print("-1 Break")
                     break
                 if len(data) == 0:  # in case that the list is empty
                     p_evt.set()  # Thread signaling to the producer that is done and waiting for another chunk
@@ -161,27 +161,29 @@ class MergeSortThreads:
 
     def run(self):
 
+        global final_sorted_result
         all_animals = self.create_animal_array()
         file = open('margesort', 'w')
 
         # check Sequential time of sort
-        print('Start sequential:')
+        #print('Start sequential:')
         start_sequential = time.time()
         sequential_array = self.merge_sort(all_animals)
         if self.is_sorted(sequential_array):
-            print("this is the sorted array!:")
+            #print("this is the sorted array!:")
+            print("")
             # print(all_animals)
-        else:
-            print("array not sorted :(")
+       # else:
+        #    print("array not sorted :(")
 
         elapsed_sequential = time.time() - start_sequential
-        print('sequential merge: {}'.format(elapsed_sequential))
+        #print('sequential merge: {}'.format(elapsed_sequential))
 
         file.write("0 {0}\n".format(elapsed_sequential))
 
-        print("@@@ Computer Process num: {} @@@".format(multiprocessing.cpu_count()))
+        #print("@@@ Computer Process num: {} @@@".format(multiprocessing.cpu_count()))
         for num_of_threads in range(1, (multiprocessing.cpu_count() * 2)+1):
-            print('\n$$$$$$$$$$$$$$$$$$$$ Num of threads {} $$$$$$$$$$$$$$$$$$$$'.format(num_of_threads))
+            #print('\n$$$$$$$$$$$$$$$$$$$$ Num of threads {} $$$$$$$$$$$$$$$$$$$$'.format(num_of_threads))
             self.final_sorted_result = []
             self.main_q = Queue()  # communicate between producer and consumer
             self.q_run = Queue()  # Flag for the while consumer is running.
@@ -193,29 +195,29 @@ class MergeSortThreads:
                 self.thread_list.append(thread)
                 thread.start()
 
-            print('start parallel:')
+            #print('start parallel:')
             start_parallel = time.time()
             self.producer(self.main_q, all_animals, len(self.thread_list))  # supervise the jobs
             elapsed_parallel = time.time() - start_parallel
-            print('parallel merge: {} sec'.format(elapsed_parallel))
+            #print('parallel merge: {} sec'.format(elapsed_parallel))
             file.write("{0} {1} \n".format(num_of_threads,elapsed_parallel))
 
-            if elapsed_sequential > elapsed_parallel:
-                print('Parallel won!!! :)')
-            else:
-                print('Sequential won :(')
+            #if elapsed_sequential > elapsed_parallel:
+                #print('Parallel won!!! :)')
+            #else:
+                #print('Sequential won :(')
 
             # merge sub-lists
             while self.final_q.qsize() > 1:
                 self.merge_multiple(self.final_q, self.final_q.get(), self.final_q.get())
             final_sorted_result = self.final_q.get()
 
-            if self.is_sorted(final_sorted_result):
-                time.sleep(2)
-                print("this is the sorted array!:")
+            #if self.is_sorted(final_sorted_result):
+                #time.sleep(2) why do you need that?
+                #print("this is the sorted array!:")
                 # print(final_sorted_result)
-            else:
-                print("array not sorted :(")
+            #else:
+                #print("array not sorted :(")
 
             for t in self.thread_list:  # Running on the thread list and checking who is still alive
                 while t.isAlive():  # if the current thread is alive, probably it's because he's still waiting on queue
@@ -225,5 +227,8 @@ class MergeSortThreads:
             for t in self.thread_list:
                 t.join()  # closing the threads
                 joined += 1
-            print("Num of joined", joined)  # Making sure that all the active threads are joined.
+            #print("Num of joined", joined)  # Making sure that all the active threads are joined.
         file.close()
+        print("MergeSortThreads is Done!")
+        print(final_sorted_result)
+        return final_sorted_result
