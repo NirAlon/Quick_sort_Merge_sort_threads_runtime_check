@@ -1,0 +1,62 @@
+Animal Array Size: 1000
+Sort Order: a
+List Priority: ['num_of_legs', 'age', 'weight', 'height']
+CPU NUMBER: 8
+
+MergeSort:
+0 0.013962507247924805
+1 0.017953157424926758 
+2 0.0409245491027832 
+3 0.010971784591674805 
+4 0.011002779006958008 
+5 0.01000666618347168 
+6 0.009974479675292969 
+7 0.009010553359985352 
+8 0.009009122848510742 
+9 0.010033607482910156 
+10 0.009973526000976562 
+11 0.008975028991699219 
+12 0.007978200912475586 
+13 0.007978439331054688 
+14 0.04787325859069824 
+15 0.007978439331054688 
+16 0.008260965347290039 
+(height: 2609, weight: 433, age: 4, num_of_legs: 0, tail: True)
+(height: 549, weight: 196, age: 86, num_of_legs: 0, tail: False)
+(height: 2962, weight: 173, age: 102, num_of_legs: 1, tail: False)
+(height: 342, weight: 209, age: 184, num_of_legs: 1, tail: False)
+(height: 1671, weight: 293, age: 64, num_of_legs: 2, tail: False)
+(height: 1838, weight: 251, age: 88, num_of_legs: 2, tail: True)
+(height: 242, weight: 416, age: 15, num_of_legs: 3, tail: True)
+(height: 3856, weight: 299, age: 3, num_of_legs: 6, tail: False)
+(height: 1640, weight: 427, age: 197, num_of_legs: 6, tail: False)
+(height: 3594, weight: 81, age: 190, num_of_legs: 9, tail: True)
+
+QuickSort:
+0 0.02294635772705078
+1 0.038860321044921875 
+2 0.03586935997009277 
+3 0.033944129943847656 
+4 0.019946813583374023 
+5 0.021941423416137695 
+6 0.021001338958740234 
+7 0.02197885513305664 
+8 0.020980119705200195 
+9 0.019994020462036133 
+10 0.02101278305053711 
+11 0.02097916603088379 
+12 0.020975112915039062 
+13 0.019991159439086914 
+14 0.043917179107666016 
+15 0.02097797393798828 
+16 0.02196812629699707 
+(height: 1255, weight: 150, age: 94, num_of_legs: 2, tail: False)
+(height: 3635, weight: 119, age: 197, num_of_legs: 3, tail: False)
+(height: 1701, weight: 145, age: 105, num_of_legs: 4, tail: True)
+(height: 587, weight: 94, age: 124, num_of_legs: 5, tail: True)
+(height: 2540, weight: 514, age: 143, num_of_legs: 5, tail: True)
+(height: 2276, weight: 110, age: 65, num_of_legs: 6, tail: True)
+(height: 689, weight: 313, age: 80, num_of_legs: 7, tail: True)
+(height: 3444, weight: 244, age: 86, num_of_legs: 9, tail: False)
+(height: 143, weight: 329, age: 162, num_of_legs: 9, tail: False)
+(height: 2566, weight: 64, age: 116, num_of_legs: 10, tail: False)
