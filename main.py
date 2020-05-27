@@ -4,11 +4,13 @@ from quick_sort_threads import QuickSortThreads
 from pandas_graph import PandasGraph
 import multiprocessing
 
-def copy_from_file(from_file,f1):
+
+def copy_from_file(from_file, f1):
     with open(from_file) as f:
-            for line in f:
-                f1.write(line)
+        for line in f:
+            f1.write(line)
     f.close()
+
 
 def sample_of_animals():
     from random import randint
@@ -28,24 +30,25 @@ if __name__ == '__main__':
     file_prompt = open('prompt', 'w')
     file_prompt.write(
         "Animal Array Size: {0}\nSort Order: {1}\nList Priority: {2}\nCPU NUMBER: {3}\n"
-        .format(config.ARRAY_LENGTH, config.SORT_ORDER,config.list, multiprocessing.cpu_count()))
-    file_prompt.write("\nMergeSort:\n")
+        .format(config.ARRAY_LENGTH, config.SORT_ORDER, config.ORDER_FIELDS_LIST, multiprocessing.cpu_count()))
+    file_prompt.write("\nMergeSort:\nNumber of threads | Time (sec):\n")
+    print("Begin Merge sorting...")
     merge_sort = MergeSortThreads()
-    final_list=merge_sort.run()
-    copy_from_file("mergesort",file_prompt)
+    final_list = merge_sort.run()
+    print("Finished Merge")
+    copy_from_file("mergesort", file_prompt)
 
     for i in sample_of_animals():
         file_prompt.write(final_list[i].__str__()+"\n")
-    file_prompt.write("\nQuickSort:\n")
+    file_prompt.write("\nQuickSort:\nNumber of threads | Time (sec):\n")
+    print("Begin Quick sorting...")
     quick_sort = QuickSortThreads()
-    final_list=quick_sort.run()
+    final_list = quick_sort.run()
+    print("Finished Quick")
     copy_from_file("quicksort", file_prompt)
     for i in sample_of_animals():
         file_prompt.write(final_list[i].__str__() + "\n")
     file_prompt.close()
-    print("Finish Program...\nPresenting Results")
+    print("Finished Program\nPresenting Results")
     graph_results = PandasGraph()
     graph_results.run()
-
-
-

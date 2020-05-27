@@ -9,6 +9,10 @@ import config
 class QuickSortThreads:
 
     lock = Lock()
+    final_results = []  # final sorted list
+    main_q = Queue()  # communicate between producer and consumer
+    q_run = Queue()  # Flag for the while consumer is running.
+    thread_list = []
 
     def chunks(self, lst, n):
         """Yield successive n-sized chunks from lst."""
@@ -58,7 +62,7 @@ class QuickSortThreads:
         # dividing the list to chunks by pack
         # every thread gets list(chunk) and event
 
-        pivot=lyst[random.randint(0, len(lyst) - 1)]
+        pivot = lyst[random.randint(0, len(lyst) - 1)]
         if config.SORT_ORDER is 'a':
             left_side = [x for x in lyst if x < pivot]
         elif config.SORT_ORDER is 'd':
@@ -136,12 +140,11 @@ class QuickSortThreads:
                 # if the flag is raised and the queue is empty the threads is break out
                 break
 
-
     def quicksort(self, lyst):
 
         if len(lyst) <= 1:
             return lyst
-        pivot=lyst[random.randint(0, len(lyst) - 1)]
+        pivot = lyst[random.randint(0, len(lyst) - 1)]
         if config.SORT_ORDER is 'a':
             return self.quicksort([x for x in lyst if x < pivot]) + [pivot] + self.quicksort([x for x in lyst if x >= pivot])
         elif config.SORT_ORDER is 'd':
@@ -169,7 +172,6 @@ class QuickSortThreads:
             self.q_run = Queue()  # Flag for the while consumer is running.
             self.q_run.put(1)  # while this queue is not empty the consumer will still running
             self.thread_list = []  # list of threads.
-
             for _ in range(num_of_threads):
                 thread = Thread(target=self.consumer, args=(self.main_q, self.lock))  # Every thread is running on the consumer program
                 self.thread_list.append(thread)
@@ -180,7 +182,6 @@ class QuickSortThreads:
             elapsed_parallel = time.time() - start_parallel
 
             file.write("{0} {1} \n".format(num_of_threads,elapsed_parallel))
-
 
             for t in self.thread_list:  # Running on the thread list and checking who is still alive
                 while t.isAlive():  # if the current thread is alive, probably it's because he's still waiting on queue

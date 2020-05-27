@@ -13,14 +13,12 @@ class MergeSortThreads:
     final_sorted_result = []
     main_q = Queue()  # communicate between producer and consumer
     q_run = Queue()  # Flag for the while consumer is running.
-    # q_run.put(1)  # while this queue is not empty the consumer will still running
     thread_list = []
 
     def is_sorted(self, lyst):
         """
         Return whether the argument lyst is in non-decreasing order.
         """
-
         # d for descending  יורד
         if config.SORT_ORDER is 'd':
             for i in range(1, len(lyst)):
@@ -131,20 +129,16 @@ class MergeSortThreads:
         for i in range(index_wait):
             p_evt[i].wait()
 
-        # global q_run
-        #print("Stop all threads", self.q_run.get())  # Raising flag to consumer to break the while loop
         return
 
     # the Consumer thread consumes items if there are any.
     def consumer(self, in_q):  # removed lock parameter, using lock from above
-        # global q_run
 
         while not self.q_run.empty():  # Thread is running until the queue is empty
 
             if not in_q.empty():
                 data, p_evt = in_q.get()
                 if data == -1:  # In case the job is done but this thread is still waiting for data on queue
-                    #print("-1 Break")
                     break
                 if len(data) == 0:  # in case that the list is empty
                     p_evt.set()  # Thread signaling to the producer that is done and waiting for another chunk
@@ -164,7 +158,6 @@ class MergeSortThreads:
         all_animals = self.create_animal_array()
         file = open('mergesort', 'w')
         # check Sequential time of sort
-        #print('Start sequential:')
         start_sequential = time.time()
         sequential_array = self.merge_sort(all_animals)
         if self.is_sorted(sequential_array) is not True:
@@ -181,7 +174,6 @@ class MergeSortThreads:
             self.q_run = Queue()  # Flag for the while consumer is running.
             self.q_run.put(1)  # while this queue is not empty the consumer will still running
             self.thread_list = []
-
             for _ in range(num_of_threads):
                 thread = Thread(target=self.consumer, args=(self.main_q,))  # Every thread is running on the consumer program
                 self.thread_list.append(thread)
@@ -193,15 +185,12 @@ class MergeSortThreads:
             if self.is_sorted(self.final_sorted_result) is not True:
                 print("array not sorted :(")
                 return None
-            file.write("{0} {1} \n".format(num_of_threads,elapsed_parallel))
-
+            file.write("{0} {1} \n".format(num_of_threads, elapsed_parallel))
 
             # merge sub-lists
             while self.final_q.qsize() > 1:
                 self.merge_multiple(self.final_q, self.final_q.get(), self.final_q.get())
             final_sorted_result = self.final_q.get()
-
-
 
             for t in self.thread_list:  # Running on the thread list and checking who is still alive
                 while t.isAlive():  # if the current thread is alive, probably it's because he's still waiting on queue
