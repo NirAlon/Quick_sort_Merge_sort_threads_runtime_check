@@ -10,12 +10,12 @@
 
 ###Here the results for 10K
 
-![alt text](https://github.com/NirAlon/Quick_sort_Merge_sort_threads_runtime_check/blob/master/result_10K.png?raw=true)
+![alt text](https://github.com/NirAlon/Quick_sort_Merge_sort_threads_runtime_check/blob/master/result_10k.png?raw=true)
 
 ###Here the results for 100K
 
-![alt text](https://github.com/NirAlon/Quick_sort_Merge_sort_threads_runtime_check/blob/master/result_100K.png?raw=true)
+![alt text](https://github.com/NirAlon/Quick_sort_Merge_sort_threads_runtime_check/blob/master/result_100k.png?raw=true)
 
 ###Here the results for 1M
 
-![alt text](https://github.com/NirAlon/Quick_sort_Merge_sort_threads_runtime_check/blob/master/result_1M.png?raw=true)
+![alt text](https://github.com/NirAlon/Quick_sort_Merge_sort_threads_runtime_check/blob/master/result_1m.png?raw=true)
